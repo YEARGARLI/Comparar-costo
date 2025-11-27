@@ -1,109 +1,510 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Comparador de Imágenes Simple</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Comparador Pro de Imágenes</title>
+
+<!-- CDN: jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-6sQ5r8bR4z8f7k3z8Kk6z8s7g2p0v3e+8d9hQ6b1z8Yb2Lw3vG3y7x9Q2s1U3t0X9Y1R2w7T1b9f2H4v5Z6g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 <style>
-body { font-family: Arial; padding: 20px; }
-img { max-width: 100%; margin-top: 10px; border: 1px solid #ccc; }
-button { margin-top: 10px; padding: 10px; width: 100%; }
-#result { margin-top: 15px; font-weight: bold; }
+  :root{
+    --bg:#0f1720; --card:#0b1220; --muted:#98a1b3; --accent:#4f46e5; --success:#10b981;
+    --glass: rgba(255,255,255,0.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#071027 0%,#0b1220 100%);color:#e6eef8;min-height:100vh;padding:18px;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#6d28d9,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;box-shadow:0 6px 18px rgba(13,17,23,.6)}
+  h1{font-size:20px;margin:0}
+  p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+  main{display:grid;grid-template-columns:360px 1fr;gap:18px}
+  .panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 24px rgba(2,6,23,.6);border:1px solid rgba(255,255,255,0.03)}
+  .left .panel{position:sticky;top:18px;height:calc(100vh - 36px);overflow:auto}
+
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  input[type=file], .url-input, select {width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
+  .btn{display:inline-block;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent),#06b6d4);color:white;font-weight:600;border:none;cursor:pointer}
+  .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .thumbs{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .thumb{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)}
+  .thumb img{width:64px;height:48px;object-fit:cover;border-radius:6px}
+  .thumb .meta{flex:1}
+  .meta b{display:block}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+  /* right area */
+  .workspace{display:flex;flex-direction:column;gap:12px}
+  .compare-row{display:flex;gap:12px;align-items:flex-start}
+  .card{flex:1;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+  .card h3{margin:0 0 10px 0;font-size:14px}
+  canvas{width:100%;height:auto;border-radius:8px;background:#fff}
+  .metrics{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .metric{background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;font-size:13px;min-width:120px;text-align:center}
+  footer{margin-top:12px;color:var(--muted);font-size:13px}
+
+  /* responsive */
+  @media (max-width:980px){
+    main{grid-template-columns:1fr; padding-bottom:60px}
+    .left .panel{position:relative;height:auto}
+  }
 </style>
 </head>
 <body>
 
-<h2>Comparador de Imágenes</h2>
+<header>
+  <div class="logo">CP</div>
+  <div>
+    <h1>Comparador Pro de Imágenes</h1>
+    <p class="lead">Subí o pegá URLs. Compará color, histograma y diferencias exactas. Exportá PDF profesional.</p>
+  </div>
+</header>
 
-<label>Imagen 1:</label>
-<input type="file" id="img1" accept="image/*"><br>
+<main>
+  <div class="left">
+    <div class="panel">
+      <h3 style="margin-top:0">Cargar imágenes</h3>
 
-<label>Imagen 2:</label>
-<input type="file" id="img2" accept="image/*"><br>
+      <label>Subir (múltiples)</label>
+      <input id="fileInput" type="file" accept="image/*" multiple>
 
-<button onclick="compareImages()">Comparar</button>
+      <label style="margin-top:10px">Pegar URL de imagen</label>
+      <div style="display:flex;gap:8px">
+        <input id="urlInput" class="url-input" placeholder="https://.../imagen.jpg">
+        <button id="btnFetch" class="btn secondary">Añadir</button>
+      </div>
 
-<div id="preview"></div>
-<div id="result"></div>
+      <div style="margin-top:10px">
+        <label>Comparación automática</label>
+        <select id="autoMode">
+          <option value="closestColor">Mejor por color</option>
+          <option value="closestHist">Mejor por histograma</option>
+          <option value="closestPixel">Menor diferencia píxeles</option>
+        </select>
+      </div>
 
-<button onclick="downloadPDF()">Descargar PDF</button>
+      <div class="actions">
+        <button id="btnAuto" class="btn">Ejecutar automática</button>
+        <button id="btnClear" class="btn secondary">Limpiar</button>
+      </div>
 
-<canvas id="canvas1" style="display:none;"></canvas>
-<canvas id="canvas2" style="display:none;"></canvas>
+      <h4 style="margin-top:14px">Imágenes cargadas</h4>
+      <div id="thumbs" class="thumbs"></div>
+
+      <footer>Tip: si una URL no carga, descargala y súbila desde tu dispositivo para evitar CORS.</footer>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <div class="compare-row">
+      <div class="card">
+        <h3>Seleccionar para comparar</h3>
+        <div style="display:flex;gap:8px">
+          <select id="selA" style="flex:1"></select>
+          <select id="selB" style="flex:1"></select>
+          <button id="btnCompare" class="btn">Comparar</button>
+        </div>
+
+        <div id="resultsArea" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card" style="width:320px">
+        <h3>Exportar / Acciones</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button id="btnPDF" class="btn">Exportar PDF (incluye diff)</button>
+          <button id="btnDownloadDiff" class="btn secondary">Descargar imagen diff</button>
+          <button id="btnToggleTheme" class="btn secondary">Modo claro / oscuro</button>
+        </div>
+
+        <div style="margin-top:12px;color:var(--muted);font-size:13px">
+          <b>Última comparación:</b>
+          <div id="lastSummary" style="margin-top:6px;color:#cfe8ff;font-size:13px">Ninguna</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Visualización</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:13px;color:var(--muted)">Imagen A</div>
+          <canvas id="canvasA"></canvas>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:13px;color:var(--muted)">Imagen B</div>
+          <canvas id="canvasB"></canvas>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:13px;color:var(--muted)">Diff visual</div>
+          <canvas id="canvasDiff"></canvas>
+        </div>
+      </div>
+
+      <div class="metrics" id="metricsBox" style="margin-top:12px"></div>
+    </div>
+  </div>
+</main>
 
 <script>
-let img1Data, img2Data, diffPercent = 0;
+(async ()=>{
 
-function loadImage(input, canvasId, callback) {
-    const file = input.files[0];
-    if (!file) return;
+// Utilidades
+function createEl(tag,attrs={}){ const e=document.createElement(tag); for(let k in attrs) e[k]=attrs[k]; return e; }
+function dataURLFromBlob(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }) }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// Estado
+const state = { images: [] }; // each: { id, name, dataURL, img (Image), avg, hist }
+
+// DOM
+const fileInput = document.getElementById('fileInput');
+const btnFetch = document.getElementById('btnFetch');
+const urlInput = document.getElementById('urlInput');
+const thumbs = document.getElementById('thumbs');
+const selA = document.getElementById('selA'), selB = document.getElementById('selB');
+const btnCompare = document.getElementById('btnCompare'), btnAuto = document.getElementById('btnAuto'), btnClear = document.getElementById('btnClear');
+const autoMode = document.getElementById('autoMode');
+const canvasA = document.getElementById('canvasA'), canvasB = document.getElementById('canvasB'), canvasDiff = document.getElementById('canvasDiff');
+const metricsBox = document.getElementById('metricsBox');
+const btnPDF = document.getElementById('btnPDF'), btnDownloadDiff = document.getElementById('btnDownloadDiff');
+const lastSummary = document.getElementById('lastSummary');
+const btnToggleTheme = document.getElementById('btnToggleTheme');
+
+let dark = true;
+
+// Eventos
+fileInput.addEventListener('change', async (e)=>{
+  const files = Array.from(e.target.files);
+  for(const f of files) await addFileImage(f);
+});
+
+btnFetch.addEventListener('click', async ()=>{
+  const url = (urlInput.value||'').trim();
+  if(!url) return alert('Pegá una URL primero');
+  await addImageFromURL(url);
+  urlInput.value='';
+});
+
+btnClear.addEventListener('click', ()=>{
+  state.images = [];
+  thumbs.innerHTML=''; selA.innerHTML=''; selB.innerHTML='';
+  clearCanvases(); metricsBox.innerHTML=''; lastSummary.textContent='Ninguna';
+});
+
+btnCompare.addEventListener('click', async ()=>{
+  const aUrl = selA.value, bUrl = selB.value;
+  if(!aUrl || !bUrl) return alert('Elegí ambas imágenes');
+  const a = state.images.find(x=>x.id===aUrl), b = state.images.find(x=>x.id===bUrl);
+  if(!a||!b) return;
+  await compareAndRender(a,b);
+});
+
+btnAuto.addEventListener('click', async ()=>{
+  if(state.images.length<2) return alert('Necesitás al menos 2 imágenes');
+  const mode = autoMode.value;
+  // For each image find best match
+  for(const a of state.images){
+    let best=null;
+    for(const b of state.images) if(a.id!==b.id){
+      const metrics = await computeMetrics(a,b);
+      const score = mode==='closestColor' ? Number(metrics.colorSim) : (mode==='closestHist' ? Number(metrics.histSim) : 100 - Number(metrics.pixelDiff));
+      if(!best || score>best.score) best={other:b,score};
+    }
+    // add small card to results area
+    // we'll just render first best pair for demo
+    if(best){
+      await compareAndRender(a,best.other);
+      break;
+    }
+  }
+});
+
+btnPDF.addEventListener('click', async ()=>{
+  // Export current canvases and metrics
+  await exportPDF();
+});
+
+btnDownloadDiff.addEventListener('click', ()=>{
+  // download diff
+  const data = canvasDiff.toDataURL('image/png');
+  const a = createEl('a'); a.href=data; a.download='diff.png'; a.click();
+});
+
+btnToggleTheme.addEventListener('click', ()=>{
+  dark = !dark;
+  if(!dark){
+    document.documentElement.style.background='linear-gradient(180deg,#f4f7fb,#e9eef7)';
+    document.body.style.color='#0b1220';
+  } else {
+    document.documentElement.style.background='linear-gradient(180deg,#071027 0%,#0b1220 100%)';
+    document.body.style.color='#e6eef8';
+  }
+});
+
+// Helpers: load images
+async function addFileImage(file){
+  const blobURL = URL.createObjectURL(file);
+  const dataURL = await fileToDataURL(file);
+  await addImageEntry(file.name, dataURL);
+}
+
+async function addImageFromURL(url){
+  try {
+    // try to fetch the image as blob (CORS-friendly if allowed). If fail, try to load directly into Image with crossOrigin
+    let resp = await fetch(url, {mode:'cors'});
+    if(!resp.ok) throw new Error('No se pudo obtener la imagen por fetch');
+    const blob = await resp.blob();
+    const dataURL = await dataURLFromBlob(blob);
+    await addImageEntry(url.split('/').pop()||'remote', dataURL);
+  } catch(err){
+    // fallback: try to load via Image with crossOrigin - may still fail
+    try {
+      const dataURL = await fetchImageAsDataURLByProxyFallback(url);
+      await addImageEntry(url.split('/').pop()||'remote', dataURL);
+    } catch(err2){
+      // final fallback: instruct user to download+upload
+      alert('No se pudo traer la imagen desde la URL (CORS). Descargala y súbila desde tu dispositivo o pega otra URL.');
+      console.warn('fetch failed', err, err2);
+    }
+  }
+}
+
+// Attempt best-effort fallback by creating an <img> and drawing to canvas (might fail if CORS)
+async function fetchImageAsDataURLByProxyFallback(url){
+  return new Promise((res,rej)=>{
     const img = new Image();
-    img.onload = function() {
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext("2d");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-        callback(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    img.crossOrigin = "Anonymous";
+    img.onload = function(){
+      try {
+        const c = document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+        c.getContext('2d').drawImage(img,0,0);
+        res(c.toDataURL('image/png'));
+      } catch(e){ rej(e); }
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = ()=>rej(new Error('img load failed'));
+    img.src = url;
+    // safety timeout
+    setTimeout(()=>rej(new Error('timeout loading image')),8000);
+  });
 }
 
-function compareImages() {
-    const input1 = document.getElementById("img1");
-    const input2 = document.getElementById("img2");
+function fileToDataURL(file){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(file); }); }
 
-    if (!input1.files.length || !input2.files.length) {
-        alert("Subí las 2 imágenes primero.");
-        return;
+// Add to state + UI
+async function addImageEntry(name, dataURL){
+  const id = 'img_'+Math.random().toString(36).slice(2,9);
+  const img = new Image();
+  img.src = dataURL;
+  await new Promise(r=>{ if(img.complete) r(); else img.onload=r; });
+  const entry = { id, name, dataURL, img, avg:null, hist:null, gray:null };
+  state.images.push(entry);
+  renderThumb(entry);
+  addSelectOption(entry);
+  // precompute features async
+  computeFeatures(entry).catch(e=>console.warn(e));
+}
+
+function renderThumb(entry){
+  const d = createEl('div'); d.className='thumb';
+  const im = createEl('img'); im.src = entry.dataURL;
+  const meta = createEl('div'); meta.className='meta';
+  meta.innerHTML = `<b>${entry.name}</b><div style="color:var(--muted);font-size:12px">ID: ${entry.id}</div>`;
+  const btnCompareNow = createEl('button'); btnCompareNow.className='btn secondary'; btnCompareNow.textContent='Usar como A';
+  btnCompareNow.onclick = ()=>{ selA.value=entry.id; selB.value=''; };
+  const btnUseB = createEl('button'); btnUseB.className='btn secondary'; btnUseB.textContent='Usar como B';
+  btnUseB.onclick = ()=>{ selB.value=entry.id; };
+  d.appendChild(im); d.appendChild(meta); d.appendChild(btnCompareNow); d.appendChild(btnUseB);
+  thumbs.appendChild(d);
+}
+
+function addSelectOption(entry){
+  const o1 = new Option(entry.name, entry.id);
+  selA.add(o1);
+  const o2 = new Option(entry.name, entry.id);
+  selB.add(o2);
+}
+
+// Features
+async function computeFeatures(entry){
+  // average color
+  const c = document.createElement('canvas'); c.width = entry.img.naturalWidth; c.height = entry.img.naturalHeight;
+  const ctx = c.getContext('2d'); ctx.drawImage(entry.img,0,0);
+  const data = ctx.getImageData(0,0,c.width,c.height).data;
+  let r=0,g=0,b=0,n=data.length/4;
+  for(let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; }
+  entry.avg = { r: r/n, g: g/n, b: b/n };
+  // hist 16 bins per channel
+  entry.hist = computeHistFromData(data,16);
+  // gray
+  entry.gray = { width:c.width, height:c.height, data: new Float32Array(c.width*c.height) };
+  for(let i=0,j=0;i<data.length;i+=4,j++) entry.gray.data[j] = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+}
+
+function computeHistFromData(data, bins=16){
+  const hist = new Array(bins*3).fill(0);
+  const step = 256/bins;
+  for(let i=0;i<data.length;i+=4){
+    const r = Math.floor(data[i]/step), g = Math.floor(data[i+1]/step), b = Math.floor(data[i+2]/step);
+    hist[r]++; hist[bins+g]++; hist[bins*2 + b]++;
+  }
+  const total = data.length/4; return hist.map(v=>v/total);
+}
+
+// Comparison metrics
+async function computeMetrics(a,b){
+  if(!a.avg || !b.avg) await Promise.all([computeFeatures(a), computeFeatures(b)]);
+  // color similarity: euclidean -> convert to 0..100
+  const dr = a.avg.r - b.avg.r, dg = a.avg.g - b.avg.g, db = a.avg.b - b.avg.b;
+  const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+  const colorSim = Math.max(0, 100 - dist).toFixed(2);
+
+  // hist similarity: bhattacharyya-like
+  let score=0; for(let i=0;i<a.hist.length;i++){ score += Math.sqrt((a.hist[i]||0)*(b.hist[i]||0)); }
+  const histSim = (score / Math.sqrt(a.hist.length)).toFixed(4);
+  const histSimPct = (histSim*100).toFixed(2);
+
+  // pixel diff percent and diff image
+  const { diffPercent, diffCanvas } = computePixelDiff(a.img, b.img);
+
+  return { colorSim, histSimPct, pixelDiff: diffPercent.toFixed(2), diffCanvas };
+}
+
+// Resize helper: scale both images to small common size for pixel diff (keeps performance)
+function computePixelDiff(imgA, imgB){
+  const maxW = 800; // limit size to keep fast
+  const w = Math.min(maxW, Math.min(imgA.naturalWidth, imgB.naturalWidth));
+  const h = Math.min( (imgA.naturalHeight * w / imgA.naturalWidth)|0, (imgB.naturalHeight * w / imgB.naturalWidth)|0 );
+  const cA = document.createElement('canvas'); cA.width=w; cA.height=h; const ctxA=cA.getContext('2d'); ctxA.drawImage(imgA,0,0,w,h);
+  const cB = document.createElement('canvas'); cB.width=w; cB.height=h; const ctxB=cB.getContext('2d'); ctxB.drawImage(imgB,0,0,w,h);
+  const dA = ctxA.getImageData(0,0,w,h).data, dB = ctxB.getImageData(0,0,w,h).data;
+  const cDiff = document.createElement('canvas'); cDiff.width=w; cDiff.height=h; const ctxD=cDiff.getContext('2d');
+  const id = ctxD.createImageData(w,h);
+  let diffCount=0; const threshold=30; // per-channel threshold
+  for(let i=0;i<dA.length;i+=4){
+    const r = Math.abs(dA[i]-dB[i]), g = Math.abs(dA[i+1]-dB[i+1]), b = Math.abs(dA[i+2]-dB[i+2]);
+    const luminance = (r+g+b)/3;
+    if(luminance > threshold){
+      diffCount++;
+      // mark red-ish pixel to highlight
+      id.data[i]=255; id.data[i+1]=40; id.data[i+2]=40; id.data[i+3]=200;
+    } else {
+      // transparent / copy average
+      const avg = (dA[i]+dB[i])/2;
+      id.data[i]=avg; id.data[i+1]=avg; id.data[i+2]=avg; id.data[i+3]=150;
     }
-
-    loadImage(input1, "canvas1", data1 => {
-        loadImage(input2, "canvas2", data2 => {
-            img1Data = data1;
-            img2Data = data2;
-
-            const len = Math.min(img1Data.data.length, img2Data.data.length);
-            let diff = 0;
-
-            for (let i = 0; i < len; i += 4) {
-                if (Math.abs(img1Data.data[i] - img2Data.data[i]) > 20 ||
-                    Math.abs(img1Data.data[i+1] - img2Data.data[i+1]) > 20 ||
-                    Math.abs(img1Data.data[i+2] - img2Data.data[i+2]) > 20) {
-                    diff++;
-                }
-            }
-
-            diffPercent = ((diff / (len/4)) * 100).toFixed(2);
-
-            document.getElementById("preview").innerHTML =
-                "<h3>Vista previa</h3>" +
-                "<p>Imagen 1:</p><img src='" + URL.createObjectURL(input1.files[0]) + "'>" +
-                "<p>Imagen 2:</p><img src='" + URL.createObjectURL(input2.files[0]) + "'>";
-
-            document.getElementById("result").innerHTML =
-                "Diferencia estimada: <b>" + diffPercent + "%</b>";
-        });
-    });
+  }
+  ctxD.putImageData(id,0,0);
+  const diffPercent = (diffCount / (dA.length/4)) * 100;
+  return { diffPercent, diffCanvas: cDiff };
 }
 
-function downloadPDF() {
-    if (!diffPercent) {
-        alert("Primero hacé una comparación.");
-        return;
-    }
-
-    const text = `Resultado de la comparación:
-Diferencia: ${diffPercent}%`;
-
-    const blob = new Blob([text], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "comparacion.pdf";
-    a.click();
+// Render comparison and canvases
+async function compareAndRender(a,b){
+  metricsBox.innerHTML='';
+  // render canvases
+  renderCanvasFromImage(canvasA, a.img);
+  renderCanvasFromImage(canvasB, b.img);
+  const metrics = await computeMetrics(a,b);
+  // render diff canvas (scale up to display width)
+  renderCanvasFromImageCanvas(canvasDiff, metrics.diffCanvas);
+  // metrics box
+  metricsBox.innerHTML = `
+    <div class="metric"><strong>Color sim.</strong><div style="color:#cfe8ff">${metrics.colorSim}%</div></div>
+    <div class="metric"><strong>Hist sim.</strong><div style="color:#cfe8ff">${metrics.histSimPct}%</div></div>
+    <div class="metric"><strong>Pixel diff</strong><div style="color:#ffd0d0">${metrics.pixelDiff}%</div></div>
+  `;
+  lastSummary.textContent = `A: ${a.name} — B: ${b.name} — Diff ${metrics.pixelDiff}%`;
+  // store last metrics/canvases to use for PDF export
+  state.last = { a, b, metrics };
 }
+
+function renderCanvasFromImage(canvasEl, img){
+  const ctx = canvasEl.getContext('2d');
+  // size to fit original but limit width for onscreen
+  const maxW = 700;
+  const ratio = Math.min(1, maxW / img.naturalWidth);
+  const w = Math.max(200, Math.round(img.naturalWidth * ratio));
+  const h = Math.round(img.naturalHeight * ratio);
+  canvasEl.width = w; canvasEl.height = h;
+  ctx.clearRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+}
+
+function renderCanvasFromImageCanvas(targetCanvas, sourceCanvas){
+  // draw source canvas contents into target sized element while preserving ratio
+  const ratio = Math.min(1, 600 / sourceCanvas.width);
+  const w = Math.round(sourceCanvas.width * ratio), h = Math.round(sourceCanvas.height * ratio);
+  targetCanvas.width = w; targetCanvas.height = h;
+  const ctx = targetCanvas.getContext('2d');
+  ctx.clearRect(0,0,w,h);
+  ctx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, 0, 0, w, h);
+}
+
+function clearCanvases(){ [canvasA,canvasB,canvasDiff].forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.width=0;c.height=0; }); }
+
+// PDF Export: uses jsPDF and embeds images from canvases
+async function exportPDF(){
+  if(!state.last) return alert('Primero hacé una comparación');
+  const { a, b, metrics } = state.last;
+  // get DataURLs
+  const imgAdata = canvasA.toDataURL('image/jpeg', 0.9);
+  const imgBdata = canvasB.toDataURL('image/jpeg', 0.9);
+  const diffData = canvasDiff.toDataURL('image/png');
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  let y = 10;
+
+  pdf.setFontSize(16); pdf.setTextColor(12,20,40);
+  pdf.text('Reporte de comparación', 14, y); y += 8;
+  pdf.setFontSize(11); pdf.setTextColor(60,60,60);
+  pdf.text(`A: ${a.name}`, 14, y); y+=6;
+  pdf.text(`B: ${b.name}`, 14, y); y+=8;
+
+  // metrics box
+  pdf.setFillColor(240,240,245);
+  pdf.rect(14, y, pageW-28, 20, 'F');
+  pdf.setTextColor(10,10,10);
+  pdf.text(`Color sim: ${metrics.colorSim}%`, 18, y+6);
+  pdf.text(`Hist sim: ${metrics.histSimPct}%`, 18, y+12);
+  pdf.text(`Pixel diff: ${metrics.pixelDiff}%`, pageW/2, y+6);
+  y += 28;
+
+  // Add images: two columns
+  const imgWmm = (pageW - 42) / 2;
+  const imgHapprox = imgWmm * 0.6;
+  pdf.addImage(imgAdata, 'JPEG', 14, y, imgWmm, imgHapprox);
+  pdf.addImage(imgBdata, 'JPEG', 14+imgWmm+14/2, y, imgWmm, imgHapprox);
+  y += imgHapprox + 8;
+
+  // Add diff image full width
+  const diffW = pageW - 28;
+  const diffH = diffW * 0.45;
+  if(y + diffH > pdf.internal.pageSize.getHeight() - 20){ pdf.addPage(); y = 14; }
+  pdf.text('Diff visual:', 14, y);
+  y += 6;
+  pdf.addImage(diffData, 'PNG', 14, y, diffW, diffH);
+  y += diffH + 8;
+
+  // footer / timestamp
+  pdf.setFontSize(9); pdf.setTextColor(120,120,120);
+  pdf.text(`Generado: ${new Date().toLocaleString()}`, 14, pdf.internal.pageSize.getHeight()-10);
+
+  const fileName = `comparacion_${(new Date()).toISOString().replace(/[:.]/g,'-')}.pdf`;
+  pdf.save(fileName);
+}
+
+// Init: small demo text
+function initDemo(){
+  metricsBox.innerHTML = `<div style="color:var(--muted)">No hay comparación todavía. Sube imágenes o pega URLs y presioná "Comparar".</div>`;
+}
+initDemo();
+
+})(); // IIFE end
 </script>
 
 </body>
 </html>
+
