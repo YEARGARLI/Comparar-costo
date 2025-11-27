@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Comparador de Imágenes Simple</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+img { max-width: 100%; margin-top: 10px; border: 1px solid #ccc; }
+button { margin-top: 10px; padding: 10px; width: 100%; }
+#result { margin-top: 15px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h2>Comparador de Imágenes</h2>
+
+<label>Imagen 1:</label>
+<input type="file" id="img1" accept="image/*"><br>
+
+<label>Imagen 2:</label>
+<input type="file" id="img2" accept="image/*"><br>
+
+<button onclick="compareImages()">Comparar</button>
+
+<div id="preview"></div>
+<div id="result"></div>
+
+<button onclick="downloadPDF()">Descargar PDF</button>
+
+<canvas id="canvas1" style="display:none;"></canvas>
+<canvas id="canvas2" style="display:none;"></canvas>
+
+<script>
+let img1Data, img2Data, diffPercent = 0;
+
+function loadImage(input, canvasId, callback) {
+    const file = input.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = function() {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        callback(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    };
+    img.src = URL.createObjectURL(file);
+}
+
+function compareImages() {
+    const input1 = document.getElementById("img1");
+    const input2 = document.getElementById("img2");
+
+    if (!input1.files.length || !input2.files.length) {
+        alert("Subí las 2 imágenes primero.");
+        return;
+    }
+
+    loadImage(input1, "canvas1", data1 => {
+        loadImage(input2, "canvas2", data2 => {
+            img1Data = data1;
+            img2Data = data2;
+
+            const len = Math.min(img1Data.data.length, img2Data.data.length);
+            let diff = 0;
+
+            for (let i = 0; i < len; i += 4) {
+                if (Math.abs(img1Data.data[i] - img2Data.data[i]) > 20 ||
+                    Math.abs(img1Data.data[i+1] - img2Data.data[i+1]) > 20 ||
+                    Math.abs(img1Data.data[i+2] - img2Data.data[i+2]) > 20) {
+                    diff++;
+                }
+            }
+
+            diffPercent = ((diff / (len/4)) * 100).toFixed(2);
+
+            document.getElementById("preview").innerHTML =
+                "<h3>Vista previa</h3>" +
+                "<p>Imagen 1:</p><img src='" + URL.createObjectURL(input1.files[0]) + "'>" +
+                "<p>Imagen 2:</p><img src='" + URL.createObjectURL(input2.files[0]) + "'>";
+
+            document.getElementById("result").innerHTML =
+                "Diferencia estimada: <b>" + diffPercent + "%</b>";
+        });
+    });
+}
+
+function downloadPDF() {
+    if (!diffPercent) {
+        alert("Primero hacé una comparación.");
+        return;
+    }
+
+    const text = `Resultado de la comparación:
+Diferencia: ${diffPercent}%`;
+
+    const blob = new Blob([text], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "comparacion.pdf";
+    a.click();
+}
+</script>
+
+</body>
+</html>
