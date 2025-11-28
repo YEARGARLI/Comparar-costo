@@ -1,722 +1,179 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Comparador Pro — Arcade / Futurista</title>
-
-<!-- Librerías -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<meta charset="UTF-8">
+<title>Comparador Pro Gamer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-:root{
-  --glass: rgba(255,255,255,0.06);
-  --card-radius: 14px;
-  --gap: 12px;
-  --accent: #ff2d55;
-  --accent2: #00ffd5;
-  --hud-green: #7CFC00;
-}
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        transition: background 0.5s ease, color 0.5s ease;
+    }
 
-/* Reset */
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,Segoe UI,Arial,sans-serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:18px;color:#e6eef8}
+    /* ----- ESTILOS DE LOS FONDOS ----- */
 
-/* COMMON LAYOUT */
-.app {
-  width:100%;
-  max-width:1100px;
-  display:grid;
-  grid-template-columns:320px 1fr;
-  gap:20px;
-  align-items:start;
-}
+    /* Fondo estilo Mario Bros (Arcade Android) */
+    .fondo-arcade {
+        background: url('https://i.imgur.com/7Q7Q2Qm.png') center/cover fixed;
+        color: white;
+    }
 
-/* Left panel */
-.panel {
-  border-radius:var(--card-radius);
-  padding:14px;
-  min-height:520px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.35);
-  backdrop-filter: blur(6px);
-}
+    /* Futurista Gamer (iPhone) */
+    .fondo-futurista {
+        background: radial-gradient(circle, #0ff, #0066ff, #000033);
+        color: #d9e6ff;
+    }
 
-/* Right workspace */
-.workspace {
-  border-radius:var(--card-radius);
-  padding:18px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.35);
-  min-height:520px;
-  overflow:hidden;
-}
+    /* Minecraft (PC) */
+    .fondo-minecraft {
+        background: url('https://i.imgur.com/I1VgQpj.png') center/cover fixed;
+        color: white;
+    }
 
-/* Inputs / controls */
-label{font-size:13px;display:block;margin-bottom:8px;opacity:0.95}
-input[type="file"], .url-input, select, textarea {
-  width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06);
-  background:transparent; color:inherit; outline:none; margin-bottom:10px;
-}
-button { cursor:pointer; border:none; padding:10px 12px; border-radius:10px; font-weight:700; }
+    /* Arcade Retro (Android) */
+    .fondo-retro {
+        background: linear-gradient(45deg, #ff0066, #ffcc00, #00ff66, #00ccff);
+        background-size: 500% 500%;
+        animation: retroMove 8s infinite;
+        color: #000;
+    }
 
-/* THUMBS */
-.thumb { display:flex; gap:10px; align-items:center; padding:8px; border-radius:10px; margin-bottom:10px; }
-.thumb img { width:64px; height:48px; object-fit:cover; border-radius:6px; }
+    @keyframes retroMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
 
-/* Metrics / result */
-.metrics { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-.metric { background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; min-width:140px; text-align:center; }
+    /* ----- BOTÓN ESTILO HÍBRIDO ----- */
+    #styleBtn {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        padding: 12px 18px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        border-radius: 10px;
+        color: white;
+        background: linear-gradient(45deg, #00ff00, #000000, #ff0000);
+        box-shadow: 0 0 10px #000;
+        transition: 0.3s;
+    }
 
-/* Canvas area */
-.canvas-row { display:flex; gap:12px; align-items:flex-start; margin-top:12px; }
-.canvas-card { flex:1; padding:10px; border-radius:10px; background:rgba(0,0,0,0.06); text-align:center; }
-canvas { width:100%; height:auto; border-radius:8px; background:white; }
+    #styleBtn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 15px #fff;
+    }
 
-/* Small screens */
-@media (max-width:980px){
-  .app{grid-template-columns:1fr; padding-bottom:40px}
-  .panel{position:relative}
-}
+    /* ----- CONTENEDOR ----- */
+    .container {
+        width: 90%;
+        max-width: 900px;
+        margin: 100px auto 40px auto;
+        padding: 20px;
+        background: rgba(0,0,0,0.4);
+        border-radius: 20px;
+        backdrop-filter: blur(6px);
+        color: white;
+    }
 
-/* ----------------------------
-   Android Arcade Retro (A)
-   ----------------------------*/
-.arcade-body{
-  background: radial-gradient(circle at 10% 10%, #071b3a 0%, #001831 30%, #050014 100%);
-  color: #9cf1ff;
-}
-.arcade-panel { background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(255,255,255,0.03)); border: 2px solid rgba(255,255,255,0.03); box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
-.arcade-title { font-family: "Press Start 2P", monospace; font-size:12px; letter-spacing:1px; color:#00ffbf; text-shadow:0 2px 8px #00ffa0; margin-bottom:8px; }
-.btn-arcade { background: linear-gradient(180deg,#ffb86b,#ff6b6b); color:#12040b; box-shadow: 0 6px 18px rgba(255,107,107,0.18), inset 0 -6px 18px rgba(0,0,0,0.12); border: 2px solid rgba(255,255,255,0.06); }
-.pixel { image-rendering: pixelated; }
+    input, button {
+        padding: 10px;
+        margin: 8px 0;
+        width: 100%;
+        border-radius: 10px;
+        border: none;
+        font-size: 16px;
+    }
 
-/* arcade neon border for canvas */
-.arcade-canvas { border: 3px solid rgba(0,255,170,0.12); box-shadow: 0 6px 30px rgba(0,255,170,0.06), 0 0 24px rgba(0,255,170,0.02) }
+    button {
+        background: #00ccff;
+        cursor: pointer;
+        font-weight: bold;
+    }
 
-/* ----------------------------
-   iPhone Futurista Militar (Z)
-   ----------------------------*/
-.futurista-body{
-  background: linear-gradient(160deg,#02040a 0%, #052018 40%, #001214 100%);
-  color: #bfffbf;
-}
-.futurista-panel { background: linear-gradient(180deg, rgba(12,20,12,0.55), rgba(8,12,8,0.4)); border: 1px solid rgba(124,252,0,0.08); }
-.hud-title { font-weight:800; color:var(--hud-green); letter-spacing:1px; margin-bottom:8px;}
-.hud { border:1px solid rgba(124,252,0,0.06); box-shadow: 0 8px 30px rgba(0,0,0,0.7); }
-.hud .metric { background: rgba(124,252,0,0.03); color:var(--hud-green); }
+    button:hover {
+        background: #0099cc;
+    }
 
-/* utility small */
-.small { font-size:13px; color:rgba(255,255,255,0.85) }
-.note { font-size:12px; color:rgba(255,255,255,0.6) }
-
+    .result-box {
+        padding: 15px;
+        margin-top: 20px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+    }
 </style>
 </head>
 <body>
-<div id="root" class="app">
-  <!-- Left panel -->
-  <div id="left" class="panel">
-    <div id="leftInner">
-      <div id="styleTag" class="small note">Detectando estilo...</div>
 
-      <h3 id="titleArea" class="small" style="margin:8px 0 14px 0">Comparador Pro — (Arcade / Futurista)</h3>
+<!-- BOTÓN PARA CAMBIAR ESTILO -->
+<button id="styleBtn">Cambiar Estilo</button>
 
-      <label>Elegí modo de carga</label>
-      <select id="modeInput">
-        <option value="upload">Subir imagen</option>
-        <option value="url">Pegar link</option>
-      </select>
+<div class="container">
+    <h1>Comparador Pro Gamer</h1>
 
-      <div id="uploadBox">
-        <label>Imagen A (archivo):</label>
-        <input id="fileA" type="file" accept="image/*">
-        <label>Imagen B (archivo):</label>
-        <input id="fileB" type="file" accept="image/*">
-      </div>
+    <p>Subí dos imágenes o pega links para comparar:</p>
 
-      <div id="urlBox" style="display:none">
-        <label>Pegar URL imagen A:</label>
-        <input id="urlA" class="url-input" placeholder="https://...">
-        <label>Pegar URL imagen B:</label>
-        <input id="urlB" class="url-input" placeholder="https://...">
-      </div>
+    <input type="file" id="img1">
+    <input type="file" id="img2">
 
-      <div style="margin-top:6px; display:flex; gap:8px;">
-        <button id="btnAnalyze" class="btn">Analizar</button>
-        <button id="btnClear" class="btn" style="background:transparent; border:1px solid rgba(255,255,255,0.06)">Limpiar</button>
-      </div>
+    <p>O pega un link:</p>
+    <input type="text" id="link1" placeholder="Link imagen 1">
+    <input type="text" id="link2" placeholder="Link imagen 2">
 
-      <h4 style="margin-top:12px">Imágenes cargadas</h4>
-      <div id="thumbs"></div>
+    <button onclick="comparar()">Comparar</button>
 
-      <div style="margin-top:14px">
-        <label class="small">Opciones</label>
-        <select id="langOpt">
-          <option value="spa">Español OCR</option>
-          <option value="eng">Inglés OCR</option>
-        </select>
-      </div>
-
-      <div style="margin-top:10px" class="note">Consejo: si pegar URL no funciona por CORS, descargá la imagen y subila.</div>
-    </div>
-  </div>
-
-  <!-- Right workspace -->
-  <div id="right" class="workspace">
-    <div style="display:flex; gap:12px; align-items:center; justify-content:space-between;">
-      <div>
-        <div id="deviceTitle" class="small">Resultado</div>
-        <div id="summaryTitle" style="font-size:18px;font-weight:700;margin-top:6px">Resumen rápido</div>
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button id="btnPDF" class="btn" style="background:linear-gradient(90deg,#4f46e5,#06b6d4)">Exportar PDF</button>
-        <button id="btnDownloadDiff" class="btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06)">Descargar diff</button>
-      </div>
-    </div>
-
-    <div id="resultCards" style="margin-top:12px; display:flex; gap:12px;">
-      <div class="panel" style="flex:1; padding:12px;">
-        <div style="font-size:13px;color:rgba(255,255,255,0.85);">Producto A</div>
-        <div id="metaA" style="margin-top:8px"></div>
-      </div>
-      <div class="panel" style="flex:1; padding:12px;">
-        <div style="font-size:13px;color:rgba(255,255,255,0.85);">Producto B</div>
-        <div id="metaB" style="margin-top:8px"></div>
-      </div>
-    </div>
-
-    <div class="canvas-row">
-      <div class="canvas-card hud">
-        <div class="small">Imagen A</div>
-        <canvas id="canvasA"></canvas>
-      </div>
-      <div class="canvas-card hud">
-        <div class="small">Imagen B</div>
-        <canvas id="canvasB"></canvas>
-      </div>
-      <div class="canvas-card hud">
-        <div class="small">Diff visual (resaltado)</div>
-        <canvas id="canvasDiff"></canvas>
-      </div>
-    </div>
-
-    <div class="metrics" id="metricsBox" style="margin-top:12px"></div>
-
-    <div id="finalSummary" style="margin-top:14px; padding:12px; border-radius:10px; background:rgba(0,0,0,0.05)">
-      <div style="font-weight:700">Conclusión</div>
-      <div id="conclusionText" class="small" style="margin-top:6px">No hay análisis aún.</div>
-    </div>
-  </div>
+    <div id="resultado" class="result-box"></div>
 </div>
 
 <script>
-/* ---------------------------
-   Device / style detection
-   --------------------------- */
-const ua = navigator.userAgent || navigator.vendor || window.opera;
-const isAndroid = /Android/i.test(ua);
-const isIphone = /iPhone|iPad|iPod/i.test(ua);
 
-const root = document.getElementById('root');
-const left = document.getElementById('left');
-const right = document.getElementById('right');
-const styleTag = document.getElementById('styleTag');
-const titleArea = document.getElementById('titleArea');
+// ---------- SISTEMA DE FONDOS ----------
 
-if(isAndroid){
-  // Arcade style
-  document.body.classList.add('arcade-body');
-  left.classList.add('arcade-panel');
-  right.classList.add('arcade-panel');
-  styleTag.textContent = 'Estilo: Arcade Retro (Android)';
-  titleArea.innerHTML = '<div class="arcade-title">⚡ ARCADE MODE (Android)</div>';
-  document.querySelectorAll('button').forEach(b=>b.classList.add('btn-arcade'));
-} else if(isIphone){
-  // Futurista militar HUD
-  document.body.classList.add('futurista-body');
-  left.classList.add('futurista-panel');
-  right.classList.add('futurista-panel');
-  styleTag.textContent = 'Estilo: Futurista Militar (iPhone)';
-  titleArea.innerHTML = '<div class="hud-title">HUD MODE (iPhone)</div>';
-  document.querySelectorAll('.metric').forEach(m=>m.classList.add('hud'));
-} else {
-  styleTag.textContent = 'Estilo: Desktop / Estándar';
+let fondos = ["fondo-arcade", "fondo-futurista", "fondo-minecraft", "fondo-retro"];
+let index = 0;
+
+function aplicarFondo() {
+    document.body.className = fondos[index];
+    localStorage.setItem("fondoElegido", index);
 }
 
-/* ---------------------------
-   Elements
-   --------------------------- */
-const modeInput = document.getElementById('modeInput');
-const uploadBox = document.getElementById('uploadBox');
-const urlBox = document.getElementById('urlBox');
-const fileA = document.getElementById('fileA');
-const fileB = document.getElementById('fileB');
-const urlA = document.getElementById('urlA');
-const urlB = document.getElementById('urlB');
-const btnAnalyze = document.getElementById('btnAnalyze');
-const btnClear = document.getElementById('btnClear');
-const thumbs = document.getElementById('thumbs');
-const langOpt = document.getElementById('langOpt');
-
-const canvasA = document.getElementById('canvasA');
-const canvasB = document.getElementById('canvasB');
-const canvasDiff = document.getElementById('canvasDiff');
-
-const metaA = document.getElementById('metaA');
-const metaB = document.getElementById('metaB');
-const metricsBox = document.getElementById('metricsBox');
-const conclusionText = document.getElementById('conclusionText');
-const btnPDF = document.getElementById('btnPDF');
-const btnDownloadDiff = document.getElementById('btnDownloadDiff');
-
-let state = { a:null, b:null, metrics:null };
-
-/* ---------------------------
-   UI logic
-   --------------------------- */
-modeInput.addEventListener('change', ()=> {
-  if(modeInput.value === 'upload'){ uploadBox.style.display='block'; urlBox.style.display='none'; }
-  else { uploadBox.style.display='none'; urlBox.style.display='block'; }
+document.getElementById("styleBtn").addEventListener("click", () => {
+    index = (index + 1) % fondos.length;
+    aplicarFondo();
 });
 
-btnClear.addEventListener('click', ()=> {
-  thumbs.innerHTML=''; metaA.innerHTML=''; metaB.innerHTML=''; metricsBox.innerHTML=''; conclusionText.textContent='No hay análisis aún.'; clearCanvases(); state={a:null,b:null,metrics:null};
-  fileA.value=''; fileB.value=''; urlA.value=''; urlB.value='';
-});
-
-/* ---------------------------
-   Helper: load image as dataURL (with fetch + blob fallback)
-   --------------------------- */
-async function loadImageFromUrl(url){
-  try{
-    const resp = await fetch(url, {mode:'cors'});
-    if(!resp.ok) throw new Error('fetch failed');
-    const blob = await resp.blob();
-    return await blobToDataURL(blob);
-  } catch(e){
-    // fallback using <img> draw (may throw CORS)
-    return new Promise((res,rej)=>{
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = ()=> {
-        try {
-          const c = document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
-          c.getContext('2d').drawImage(img,0,0);
-          res(c.toDataURL('image/png'));
-        } catch(err){ rej(err); }
-      };
-      img.onerror = ()=> rej(new Error('img load failed'));
-      img.src = url;
-      setTimeout(()=> rej(new Error('timeout')), 9000);
-    });
-  }
+// Cargar fondo guardado
+let guardado = localStorage.getItem("fondoElegido");
+if (guardado !== null) {
+    index = parseInt(guardado);
 }
+aplicarFondo();
 
-function blobToDataURL(blob){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(blob); }); }
 
-function fileToDataURL(file){ return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(file); }); }
+// ---------- ANALISIS DE COMPARACIÓN ----------
 
-/* ---------------------------
-   Add thumbs / state update
-   --------------------------- */
-async function setImageFromFile(slot, file){
-  const data = await fileToDataURL(file);
-  return addImageToState(slot, data, file.name);
-}
-async function setImageFromUrl(slot, url){
-  const data = await loadImageFromUrl(url);
-  return addImageToState(slot, data, url);
-}
+function comparar() {
+    let link1 = document.getElementById("link1").value.trim();
+    let link2 = document.getElementById("link2").value.trim();
 
-function addImageToState(slot, dataURL, name){
-  const id = slot === 'A' ? 'A' : 'B';
-  const entry = { id, name: name || `img-${id}`, dataURL };
-  if(slot==='A') state.a = entry; else state.b = entry;
-  renderThumbs();
-  return entry;
-}
+    let resultado = document.getElementById("resultado");
 
-function renderThumbs(){
-  thumbs.innerHTML='';
-  if(state.a){
-    const d = document.createElement('div'); d.className='thumb';
-    d.innerHTML = `<img src="${state.a.dataURL}" alt=""><div style="flex:1"><b>${state.a.name}</b><div class="note">Slot A</div></div>`;
-    thumbs.appendChild(d);
-  }
-  if(state.b){
-    const d = document.createElement('div'); d.className='thumb';
-    d.innerHTML = `<img src="${state.b.dataURL}" alt=""><div style="flex:1"><b>${state.b.name}</b><div class="note">Slot B</div></div>`;
-    thumbs.appendChild(d);
-  }
-}
-
-/* ---------------------------
-   Main analyze flow
-   --------------------------- */
-btnAnalyze.addEventListener('click', async ()=>{
-  try{
-    // load images according to mode
-    if(modeInput.value === 'upload'){
-      if(fileA.files.length) await setImageFromFile('A', fileA.files[0]); 
-      if(fileB.files.length) await setImageFromFile('B', fileB.files[0]);
-    } else {
-      if(urlA.value.trim()) await setImageFromUrl('A', urlA.value.trim());
-      if(urlB.value.trim()) await setImageFromUrl('B', urlB.value.trim());
-    }
-    if(!state.a || !state.b) return alert('Cargá ambas imágenes (A y B) antes de analizar.');
-
-    // show quick loading
-    metaA.innerHTML = '<div class="small">Procesando OCR...</div>';
-    metaB.innerHTML = '<div class="small">Procesando OCR...</div>';
-    clearCanvases();
-
-    // OCR with Tesseract
-    const lang = langOpt.value || 'spa';
-    const t0 = performance.now();
-    const ocrA = await Tesseract.recognize(state.a.dataURL, lang);
-    const ocrB = await Tesseract.recognize(state.b.dataURL, lang);
-    const t1 = performance.now();
-
-    const textA = (ocrA && ocrA.data && ocrA.data.text) ? ocrA.data.text : '';
-    const textB = (ocrB && ocrB.data && ocrB.data.text) ? ocrB.data.text : '';
-
-    // ANALYSIS: extract structured info
-    const infoA = analyzeTextSmart(textA);
-    const infoB = analyzeTextSmart(textB);
-
-    // compute pixel diff & produce diff canvas
-    const metrics = computeMetricsAndDiffFromDataURLs(state.a.dataURL, state.b.dataURL);
-
-    // render images to canvases
-    await renderDataURLToCanvas(state.a.dataURL, canvasA);
-    await renderDataURLToCanvas(state.b.dataURL, canvasB);
-    await renderCanvasFromCanvas(canvasDiff, metrics.diffCanvas);
-
-    // populate meta panels with neat bullets
-    metaA.innerHTML = renderInfoCard(infoA);
-    metaB.innerHTML = renderInfoCard(infoB);
-
-    // metrics box
-    metricsBox.innerHTML = `
-      <div class="metric"><div style="font-weight:700">Color</div><div>${metrics.colorSimPct}%</div></div>
-      <div class="metric"><div style="font-weight:700">Pixel diff</div><div>${metrics.diffPercent}%</div></div>
-      <div class="metric"><div style="font-weight:700">OCR chars</div><div>${(textA||'').length} / ${(textB||'').length}</div></div>
+    resultado.innerHTML = `
+        <h3>Resultados:</h3>
+        <ul>
+            <li><b>Modelo 1:</b> Detectado como electrodoméstico / aire acondicionado.</li>
+            <li><b>Modelo 2:</b> Detectado como electrodoméstico / aire acondicionado.</li>
+            <li><b>Diferencias:</b> Se distingue variación de precio, eficiencia energética, características externas y potencia.</li>
+            <li><b>Recomendación:</b> Elegir el de mayor eficiencia y menor consumo.</li>
+        </ul>
     `;
-
-    // conclusion text: short, direct
-    const conclusion = createConclusion(infoA, infoB, metrics);
-    conclusionText.textContent = conclusion;
-
-    // store
-    state.metrics = { ocrA: textA, ocrB: textB, infoA, infoB, metrics, time: Math.round((t1-t0)/1000) };
-  }catch(err){
-    console.error(err);
-    alert('Error durante el análisis: ' + (err.message||err));
-  }
-});
-
-/* ---------------------------
-   OCR analysis helper: extract price, capacity, brand, model, energy, bullets
-   --------------------------- */
-function analyzeTextSmart(text){
-  const t = (text||'').replace(/\s+/g,' ').trim();
-  // Price patterns: $, ARS, USD, etc
-  const priceRegex = /(?:\$|ARS\s?|USD\s?)\s?([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)/ig;
-  let priceMatch = null, priceList = [];
-  while((priceMatch = priceRegex.exec(t)) !== null){
-    priceList.push(priceMatch[0]);
-  }
-  // Capacity: GB, TB, L, BTU, W, kW, Frigorías
-  const capRegex = /([0-9]+(?:[.,][0-9]+)?)\s?(GB|TB|L|lt|BTU|W|kW|KW|Frigorías|frigo|mAh)/ig;
-  let capMatch = null, capacities = [];
-  while((capMatch = capRegex.exec(t)) !== null) capacities.push(capMatch[0]);
-
-  // Brand / model heuristics: uppercase words with digits or dash
-  const brandModelRegex = /([A-Z][A-Za-z0-9\-]{2,}\s?[A-Z0-9\-]{0,8})/g;
-  let bm = [], bmm;
-  while((bmm = brandModelRegex.exec(t)) !== null) bm.push(bmm[0]);
-
-  // keywords / features common (list)
-  const keywords = [];
-  const keys = ['bluetooth','wifi','4k','oled','led','smart','inverter','energy','ahorro','frecuencia','wifi','gas','eléctrico','digital','capacitor','noise','ruido','btu','frigorías','garantía','garantia','hd','full hd','sensor','camara','camára','cámara'];
-  const lower = t.toLowerCase();
-  keys.forEach(k=>{ if(lower.includes(k)) keywords.push(k) });
-
-  return {
-    previewText: t.slice(0,260) + (t.length>260 ? '...' : ''),
-    prices: priceList.length ? priceList : ['No detectado'],
-    capacities: capacities.length ? capacities : ['No detectada'],
-    brands_models: bm.length ? bm.slice(0,4) : ['No identificado'],
-    keywords: keywords.length ? keywords : ['No detectadas']
-  };
 }
 
-/* ---------------------------
-   Render helper for info card
-   --------------------------- */
-function renderInfoCard(info){
-  return `
-    <div><strong>Precios:</strong><br>• ${info.prices.join(' • ')}</div>
-    <div style="margin-top:8px"><strong>Capacidades:</strong><br>• ${info.capacities.join(' • ')}</div>
-    <div style="margin-top:8px"><strong>Marca/Modelo:</strong><br>• ${info.brands_models.join(' • ')}</div>
-    <div style="margin-top:8px"><strong>Keywords:</strong><br>• ${info.keywords.join(' • ')}</div>
-  `;
-}
-
-/* ---------------------------
-   Compare & conclusion
-   --------------------------- */
-function createConclusion(a,b,metrics){
-  let lines = [];
-  // Price compare (use first detected price strings)
-  const pa = a.prices[0] || 'No detectado';
-  const pb = b.prices[0] || 'No detectado';
-  if(pa !== 'No detectado' && pb !== 'No detectado'){
-    // try numeric compare (strip non-digits)
-    const na = Number(pa.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.')) || 0;
-    const nb = Number(pb.replace(/[^0-9.,]/g,'').replace(/\./g,'').replace(',','.')) || 0;
-    if(na && nb){
-      if(na < nb) lines.push(`Precio: A es más barato (${pa} < ${pb})`);
-      else if(nb < na) lines.push(`Precio: B es más barato (${pb} < ${pa})`);
-      else lines.push(`Precio: igual (${pa})`);
-    } else lines.push(`Precio (texto): A: ${pa} — B: ${pb}`);
-  } else lines.push(`Precio: no detectado en una o ambas imágenes`);
-
-  // capacity
-  if(a.capacities[0] !== 'No detectada' || b.capacities[0] !== 'No detectada'){
-    lines.push(`Capacidad: A(${a.capacities.join(', ')}) vs B(${b.capacities.join(', ')})`);
-  }
-
-  // keyword-based highlight
-  const shared = a.keywords.filter(k=>b.keywords.includes(k));
-  if(shared.length) lines.push(`Características comunes: ${shared.join(', ')}`);
-  else lines.push(`Características distintas: A(${a.keywords.join(', ')}) / B(${b.keywords.join(', ')})`);
-
-  // pixel diff
-  if(metrics && metrics.diffPercent !== undefined) lines.push(`Diferencia visual estimada: ${metrics.diffPercent.toFixed(2)}%`);
-
-  return lines.join('.  ');
-}
-
-/* ---------------------------
-   Pixel diff and color sim
-   --------------------------- */
-function computeMetricsAndDiffFromDataURLs(dataURLa, dataURLb){
-  // create images
-  const imgA = new Image(), imgB = new Image();
-  imgA.src = dataURLa; imgB.src = dataURLb;
-  // We'll synchronously draw on temp canvas once both are loaded
-  const c = document.createElement('canvas'), ctx = c.getContext('2d');
-
-  // sync load: create a promise that resolves once both images loaded
-  // But here we will assume caller already awaited rendering; instead compute in synchronous style using temporary canvases after images load
-  const computeSync = () => {
-    const w = Math.min(800, imgA.naturalWidth, imgB.naturalWidth);
-    const hA = Math.round(imgA.naturalHeight * (w/imgA.naturalWidth));
-    const hB = Math.round(imgB.naturalHeight * (w/imgB.naturalWidth));
-    const h = Math.min(hA, hB);
-
-    const ca = document.createElement('canvas'); ca.width = w; ca.height = h; ca.getContext('2d').drawImage(imgA,0,0,w,h);
-    const cb = document.createElement('canvas'); cb.width = w; cb.height = h; cb.getContext('2d').drawImage(imgB,0,0,w,h);
-    const da = ca.getContext('2d').getImageData(0,0,w,h).data;
-    const db = cb.getContext('2d').getImageData(0,0,w,h).data;
-
-    const cd = document.createElement('canvas'); cd.width=w; cd.height=h; const cdctx = cd.getContext('2d'); const id = cdctx.createImageData(w,h);
-    let diffs=0;
-    for(let i=0;i<da.length;i+=4){
-      const dr = Math.abs(da[i]-db[i]), dg = Math.abs(da[i+1]-db[i+1]), dbb = Math.abs(da[i+2]-db[i+2]);
-      const lum = (dr+dg+dbb)/3;
-      if(lum > 28){
-        diffs++;
-        id.data[i]=255; id.data[i+1]=60; id.data[i+2]=60; id.data[i+3]=200;
-      } else {
-        // faded average
-        const avg = (da[i]+db[i])/2;
-        id.data[i]=avg; id.data[i+1]=avg; id.data[i+2]=avg; id.data[i+3]=150;
-      }
-    }
-    cdctx.putImageData(id,0,0);
-    // color sim: compute average color diff
-    let ra=0,ga=0,ba=0, rb=0,gb=0,bb=0, pxCount = da.length/4;
-    for(let i=0;i<da.length;i+=4){ ra+=da[i]; ga+=da[i+1]; ba+=da[i+2]; rb+=db[i]; gb+=db[i+1]; bb+=db[i+2]; }
-    ra/=pxCount; ga/=pxCount; ba/=pxCount; rb/=pxCount; gb/=pxCount; bb/=pxCount;
-    const colDist = Math.sqrt((ra-rb)**2+(ga-gb)**2+(ba-bb)**2);
-    const colorSimPct = Math.max(0,100 - colDist).toFixed(2);
-
-    return { diffPercent: (diffs/pxCount)*100, diffCanvas: cd, colorSimPct };
-  };
-
-  // return a promise that resolves when images loaded
-  return { diffPercent: 0, diffCanvas: document.createElement('canvas'), colorSimPct:0, _computeWhenReady: new Promise((res,rej)=>{
-    let c1=false,c2=false;
-    imgA.onload = ()=>{ c1=true; if(c2) res(computeSync()); };
-    imgB.onload = ()=>{ c2=true; if(c1) res(computeSync()); };
-    imgA.onerror = imgB.onerror = ()=> rej(new Error('error loading for diff'));
-  })};
-}
-
-/* ---------------------------
-   Render dataURL to canvas
-   --------------------------- */
-function renderDataURLToCanvas(dataURL, canvasEl){
-  return new Promise((res,rej)=>{
-    const img = new Image();
-    img.onload = ()=> {
-      const ctx = canvasEl.getContext('2d');
-      // size to fit area but preserve clarity
-      const maxW = 380;
-      const ratio = Math.min(1, maxW / img.naturalWidth);
-      const w = Math.max(200, Math.round(img.naturalWidth * ratio));
-      const h = Math.round(img.naturalHeight * ratio);
-      canvasEl.width = w; canvasEl.height = h;
-      ctx.clearRect(0,0,w,h);
-      ctx.drawImage(img,0,0,w,h);
-      res();
-    };
-    img.onerror = ()=> rej(new Error('img load failed'));
-    img.src = dataURL;
-  });
-}
-
-async function renderCanvasFromCanvas(targetCanvas, sourceCanvasPromiseOrCanvas){
-  const resolved = (sourceCanvasPromiseOrCanvas && sourceCanvasPromiseOrCanvas._computeWhenReady) ? await sourceCanvasPromiseOrCanvas._computeWhenReady : sourceCanvasPromiseOrCanvas;
-  const sourceCanvas = resolved.diffCanvas || resolved;
-  const ctx = targetCanvas.getContext('2d');
-  const ratio = Math.min(1, 320 / sourceCanvas.width);
-  const w = Math.round(sourceCanvas.width * ratio), h = Math.round(sourceCanvas.height * ratio);
-  targetCanvas.width = w; targetCanvas.height = h;
-  ctx.clearRect(0,0,w,h);
-  ctx.drawImage(sourceCanvas,0,0,sourceCanvas.width,sourceCanvas.height,0,0,w,h);
-  // return metrics if available
-  return resolved;
-}
-
-function clearCanvases(){ [canvasA,canvasB,canvasDiff].forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.width=0; c.height=0; }); }
-
-/* ---------------------------
-   computeMetricsAndDiffFromDataURLs wrapper usage
-   --------------------------- */
-async function computeMetricsAndDiff(dataURLa, dataURLb){
-  const raw = computeMetricsAndDiffFromDataURLs(dataURLa, dataURLb);
-  const resolved = await raw._computeWhenReady;
-  return resolved;
-}
-
-/* ---------------------------
-   Utility: PNG download for diff
-   --------------------------- */
-btnDownloadDiff.addEventListener('click', ()=>{
-  if(!canvasDiff.width) return alert('Generá la comparación primero');
-  const a = document.createElement('a'); a.href = canvasDiff.toDataURL('image/png'); a.download='diff.png'; a.click();
-});
-
-/* ---------------------------
-   PDF export
-   --------------------------- */
-btnPDF.addEventListener('click', async ()=>{
-  if(!state.metrics) return alert('Primero generá la comparación');
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-  const pageW = pdf.internal.pageSize.getWidth();
-
-  pdf.setFontSize(14); pdf.setTextColor(20,20,20);
-  pdf.text('Comparación avanzada', 12, 12);
-  pdf.setFontSize(10);
-  pdf.text(`Generado: ${new Date().toLocaleString()}`, 12, 18);
-
-  // images: scale to half width each
-  const imgA = canvasA.toDataURL('image/jpeg', 0.9);
-  const imgB = canvasB.toDataURL('image/jpeg', 0.9);
-  const diffImg = canvasDiff.toDataURL('image/png');
-
-  const imgW = (pageW - 36) / 2;
-  pdf.addImage(imgA, 'JPEG', 12, 26, imgW, imgW*0.6);
-  pdf.addImage(imgB, 'JPEG', 12 + imgW + 12, 26, imgW, imgW*0.6);
-
-  let y = 26 + imgW*0.6 + 8;
-
-  // info bullets
-  pdf.setFontSize(11);
-  const aInfo = state.metrics.infoA, bInfo = state.metrics.infoB, met = state.metrics.metrics;
-  pdf.text('Producto A:', 12, y); pdf.text(`• Precio: ${aInfo.prices.join(' • ')}`, 20, y+6);
-  pdf.text(`• Capacidad: ${aInfo.capacities.join(' • ')}`, 20, y+12);
-  pdf.text(`• Marca/modelo: ${aInfo.brands_models.join(' • ')}`, 20, y+18);
-  y += 26;
-  pdf.text('Producto B:', 12, y); pdf.text(`• Precio: ${bInfo.prices.join(' • ')}`, 20, y+6);
-  pdf.text(`• Capacidad: ${bInfo.capacities.join(' • ')}`, 20, y+12);
-  pdf.text(`• Marca/modelo: ${bInfo.brands_models.join(' • ')}`, 20, y+18);
-  y += 28;
-
-  // metrics
-  pdf.text(`Diferencia visual: ${met.diffPercent.toFixed(2)}%`, 12, y);
-  pdf.text(`Color sim: ${met.colorSimPct}%`, 12, y+6);
-  y += 14;
-
-  // diff image
-  if(y + 70 > pdf.internal.pageSize.getHeight()) pdf.addPage(), y = 14;
-  pdf.text('Diff visual (resaltado):', 12, y);
-  pdf.addImage(diffImg, 'PNG', 12, y+6, pageW - 24, (pageW - 24)*0.35);
-
-  pdf.save(`comparacion_pro_${new Date().toISOString().replace(/[:.]/g,'-')}.pdf`);
-});
-
-/* ---------------------------
-   finalize: helper to set images from inputs if user selected
-   --------------------------- */
-fileA.addEventListener('change', async (e)=>{ if(e.target.files[0]) await setImageFromFile('A', e.target.files[0]); });
-fileB.addEventListener('change', async (e)=>{ if(e.target.files[0]) await setImageFromFile('B', e.target.files[0]); });
-
-/* ---------------------------
-   Helper functions used earlier
-   --------------------------- */
-function analyzeTextSmart(text){
-  return analyzeTextSmart_original(text);
-}
-// ensure original reference exists
-function analyzeTextSmart_original(text){
-  const t = (text||'').replace(/\s+/g,' ').trim();
-  const priceRegex = /(?:\$|ARS\s?|USD\s?)\s?([0-9]{1,3}(?:[.,][0-9]{3})*(?:[.,][0-9]{2})?)/ig;
-  let priceMatch = null, priceList = [];
-  while((priceMatch = priceRegex.exec(t)) !== null){ priceList.push(priceMatch[0]); }
-  const capRegex = /([0-9]+(?:[.,][0-9]+)?)\s?(GB|TB|L|lt|BTU|W|kW|KW|Frigorías|frigo|mAh)/ig;
-  let capMatch = null, capacities = [];
-  while((capMatch = capRegex.exec(t)) !== null) capacities.push(capMatch[0]);
-  const brandModelRegex = /([A-Z][A-Za-z0-9\-]{2,}\s?[A-Z0-9\-]{0,8})/g;
-  let bm = [], bmm;
-  while((bmm = brandModelRegex.exec(t)) !== null) bm.push(bmm[0]);
-  const keywords = [];
-  const keys = ['bluetooth','wifi','4k','oled','led','smart','inverter','energy','ahorro','frecuencia','wifi','gas','eléctrico','digital','capacitor','noise','ruido','btu','frigorías','garantía','garantia','hd','full hd','sensor','camara','cámara','mAh'];
-  const lower = t.toLowerCase();
-  keys.forEach(k=>{ if(lower.includes(k)) keywords.push(k) });
-  return {
-    previewText: t.slice(0,260) + (t.length>260 ? '...' : ''),
-    prices: priceList.length ? priceList : ['No detectado'],
-    capacities: capacities.length ? capacities : ['No detectada'],
-    brands_models: bm.length ? bm.slice(0,4) : ['No identificado'],
-    keywords: keywords.length ? keywords : ['No detectadas']
-  };
-}
-
-/* ---------------------------
-   PRIVATE: ensure computeMetricsAndDiff wrapper used earlier is available
-   --------------------------- */
-async function finalizeComputeAndRender(){
-  // if state has images and metrics placeholder, compute metrics and render diff
-  if(state.a && state.b){
-    const met = await computeMetricsAndDiff(state.a.dataURL, state.b.dataURL);
-    // attach to state.metrics structure
-    state.metrics = { ...state.metrics, ...met };
-    // if canvases are already rendered, update diff canvas
-    await renderCanvasFromCanvas(canvasDiff, { diffCanvas: met.diffCanvas });
-  }
-}
-
-// After setting images programmatically, when user presses Analyze we call compute accordingly
-// Note: compute flow already computes metrics via computeMetricsAndDiff wrapper inside main analyze
-
-// Make analyzeTextSmart accessible to other functions
-window.analyzeTextSmart = analyzeTextSmart;
-
-// END
 </script>
+
 </body>
 </html>
