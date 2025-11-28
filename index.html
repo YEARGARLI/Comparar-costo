@@ -1,168 +1,194 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparador IA</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comparador + MiniChat IA</title>
 <style>
-/* ================== FONDO MINECRAFT ================== */
-body {
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    background: url('https://i.imgur.com/l5iW3F6.png');
-    background-size: 256px;
-    image-rendering: pixelated;
-    color: #fff;
-}
+    body {
+        font-family: Arial, sans-serif;
+        background: #101010;
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
 
-/* Oscurecer un poco */
-.overlay {
-    background: rgba(0,0,0,0.6);
-    position: fixed;
-    inset: 0;
-}
+    h1 { margin-top: 20px; }
 
-/* ================== BOTÓN FLOTANTE ================== */
-#chatButton {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 72px;
-    height: 72px;
-    background: url('https://i.imgur.com/5kKTZxr.png');
-    background-size: cover;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 0 12px #00ff00;
-    animation: pulse 1.4s infinite;
-}
+    .container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 5px #00ff00; }
-    50% { box-shadow: 0 0 20px #00ff00; }
-    100% { box-shadow: 0 0 5px #00ff00; }
-}
+    input[type="file"], input[type="text"] {
+        padding: 10px;
+        width: 260px;
+        border-radius: 10px;
+        border: none;
+    }
 
-/* ================== MINI CHAT ================== */
-#chatWindow {
-    position: fixed;
-    bottom: 110px;
-    right: 20px;
-    width: 320px;
-    height: 420px;
-    background: #1D4B1A;
-    border: 4px solid #3AFF28;
-    display: none;
-    border-radius: 6px;
-    padding: 10px;
-    image-rendering: pixelated;
-}
+    button {
+        padding: 12px 20px;
+        background: #4caf50;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover { background: #45a049; }
 
-#chatLog {
-    height: 330px;
-    overflow-y: auto;
-    background: #123510;
-    padding: 6px;
-    border: 2px solid #3AFF28;
-}
+    /* PANEL DEL MINICHAT */
+    #miniChatPanel {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 320px;
+        height: 420px;
+        background: #1b1b1b;
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.6);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(50px);
+        pointer-events: none;
+        transition: 0.3s ease;
+    }
 
-.msg {
-    margin: 6px 0;
-}
+    #miniChatPanel.active {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+    }
 
-.user {
-    color: #00ffea;
-}
+    #chatHeader {
+        background: #292929;
+        padding: 15px;
+        font-weight: bold;
+        border-bottom: 1px solid #444;
+    }
 
-.bot {
-    color: #3AFF28;
-}
+    #chatMessages {
+        flex: 1;
+        padding: 10px;
+        overflow-y: auto;
+        text-align: left;
+    }
 
-#chatInput {
-    width: 100%;
-    margin-top: 8px;
-    padding: 6px;
-    background: #0b2509;
-    border: 2px solid #3AFF28;
-    color: white;
-}
+    #chatInputBox {
+        display: flex;
+    }
+    #chatInput {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        outline: none;
+    }
+    #sendBtn {
+        background: #4caf50;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        color: white;
+    }
 
-#sendBtn {
-    width: 100%;
-    margin-top: 6px;
-    padding: 6px;
-    background: #3AFF28;
-    color: #002600;
-    cursor: pointer;
-    font-weight: bold;
-}
+    /* BOTÓN DEL CHAT */
+    #chatOpenBtn {
+        width: 70px;
+        height: 70px;
+        background: #4caf50;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 30px;
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        user-select: none;
+    }
+
 </style>
 </head>
-
 <body>
-<div class="overlay"></div>
 
-<!-- ================== BOTÓN ================== -->
-<div id="chatButton"></div>
+<h1>Comparador + MiniChat IA</h1>
 
-<!-- ================== MINI CHAT ================== -->
-<div id="chatWindow">
-    <div id="chatLog"></div>
-    <input id="chatInput" placeholder="Escribe aquí...">
-    <button id="sendBtn">Enviar</button>
+<div class="container">
+    <h3>Subir UNA sola imagen o link para activar MiniChat</h3>
+    <input type="file" id="singleImage" accept="image/*">
+    <input type="text" id="singleLink" placeholder="O pega un link de imagen">
+
+    <button onclick="activarMiniChat()">Analizar y activar MiniChat</button>
+</div>
+
+<!-- BOTÓN REDONDO PARA MOSTRAR EL CHAT -->
+<div id="chatOpenBtn" onclick="toggleChat()">💬</div>
+
+<!-- PANEL DEL MINICHAT -->
+<div id="miniChatPanel">
+    <div id="chatHeader">Asistente IA</div>
+    <div id="chatMessages"></div>
+
+    <div id="chatInputBox">
+        <input type="text" id="chatInput" placeholder="Escribe..." />
+        <button id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
 </div>
 
 <script>
-/* ========== MOSTRAR/OCULTAR CHAT ========== */
-document.getElementById("chatButton").onclick = () => {
-    const c = document.getElementById("chatWindow");
-    c.style.display = (c.style.display === "none") ? "block" : "none";
-};
 
-/* ========== SISTEMA DE DIÁLOGO DE IA LOCAL SIMULADA ========== */
-
-function botResponse(text) {
-
-    text = text.toLowerCase();
-
-    if (text.includes("barato") || text.includes("menor precio")) {
-        return "📉 Buscando opciones más económicas…\n\n👉 MercadoLibre:\nhttps://listado.mercadolibre.com.ar/" + encodeURIComponent(lastDetectedProduct);
-    }
-
-    if (text.includes("similar") || text.includes("parecido")) {
-        return "🔍 Buscando productos similares…\n\n📦 Marketplace:\nhttps://www.facebook.com/marketplace/search?q=" + encodeURIComponent(lastDetectedProduct);
-    }
-
-    if (text.includes("ubicación")) {
-        return "📍 Necesito tu permiso para usar la ubicación.\nAceptá la notificación del navegador cuando aparezca.";
-    }
-
-    if (text.includes("analiza") || text.includes("analizar") || text.includes("image")) {
-        return "🧠 Analizando la imagen…\n\n✔ Producto detectado: *" + lastDetectedProduct + "*\n✔ Categoría: Electrodomésticos\n✔ Marca probable: Sansei / Philco / Surrey\n✔ Capacidad estimada: 3200–3600 frigorías\n\n¿Querés que busque precios?";
-    }
-
-    return "🙂 No entendí bien. Probá decir:\n- Buscar barato\n- Buscar similares\n- Analizar producto\n- Usar ubicación";
+function toggleChat() {
+    const panel = document.getElementById("miniChatPanel");
+    panel.classList.toggle("active");
 }
 
-let lastDetectedProduct = "aire acondicionado 3500 frigorías";
+function activarMiniChat() {
+    const img = document.getElementById("singleImage").files[0];
+    const link = document.getElementById("singleLink").value.trim();
 
-/* ========== ENVÍO DE MENSAJES ========== */
-document.getElementById("sendBtn").onclick = () => {
+    if (!img && !link) {
+        alert("Sube una imagen o un link para activar el MiniChat.");
+        return;
+    }
+
+    toggleChat();
+    autoMsg("Imagen/link recibido. ¿Desea que busque productos similares pero más económicos?");
+    setTimeout(() => {
+        autoMsg("¿Nos permite utilizar su ubicación para buscar productos en su zona?");
+    }, 1500);
+}
+
+function autoMsg(text) {
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `<div><b>IA:</b> ${text}</div>`;
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendMessage() {
     const input = document.getElementById("chatInput");
-    const log = document.getElementById("chatLog");
+    const text = input.value.trim();
+    if (!text) return;
 
-    const userTxt = input.value.trim();
-    if (userTxt === "") return;
-
-    log.innerHTML += `<div class="msg user">👤 ${userTxt}</div>`;
-
-    const botTxt = botResponse(userTxt);
-    log.innerHTML += `<div class="msg bot">💬 ${botTxt}</div>`;
-
-    log.scrollTop = log.scrollHeight;
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `<div><b>Tú:</b> ${text}</div>`;
+    box.scrollTop = box.scrollHeight;
     input.value = "";
-};
+
+    // SIMULA SEÑAL ENVIADA A LA IA (CHATGPT)
+    setTimeout(() => {
+        autoMsg("Procesando... generando mejores opciones para ti...");
+    }, 600);
+}
+
 </script>
 
 </body>
@@ -170,170 +196,195 @@ document.getElementById("sendBtn").onclick = () => {
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparador IA</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comparador + MiniChat IA</title>
 <style>
-/* ================== FONDO MINECRAFT ================== */
-body {
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    background: url('https://i.imgur.com/l5iW3F6.png');
-    background-size: 256px;
-    image-rendering: pixelated;
-    color: #fff;
-}
+    body {
+        font-family: Arial, sans-serif;
+        background: #101010;
+        color: #fff;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
 
-/* Oscurecer un poco */
-.overlay {
-    background: rgba(0,0,0,0.6);
-    position: fixed;
-    inset: 0;
-}
+    h1 { margin-top: 20px; }
 
-/* ================== BOTÓN FLOTANTE ================== */
-#chatButton {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 72px;
-    height: 72px;
-    background: url('https://i.imgur.com/5kKTZxr.png');
-    background-size: cover;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 0 12px #00ff00;
-    animation: pulse 1.4s infinite;
-}
+    .container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 5px #00ff00; }
-    50% { box-shadow: 0 0 20px #00ff00; }
-    100% { box-shadow: 0 0 5px #00ff00; }
-}
+    input[type="file"], input[type="text"] {
+        padding: 10px;
+        width: 260px;
+        border-radius: 10px;
+        border: none;
+    }
 
-/* ================== MINI CHAT ================== */
-#chatWindow {
-    position: fixed;
-    bottom: 110px;
-    right: 20px;
-    width: 320px;
-    height: 420px;
-    background: #1D4B1A;
-    border: 4px solid #3AFF28;
-    display: none;
-    border-radius: 6px;
-    padding: 10px;
-    image-rendering: pixelated;
-}
+    button {
+        padding: 12px 20px;
+        background: #4caf50;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover { background: #45a049; }
 
-#chatLog {
-    height: 330px;
-    overflow-y: auto;
-    background: #123510;
-    padding: 6px;
-    border: 2px solid #3AFF28;
-}
+    /* PANEL DEL MINICHAT */
+    #miniChatPanel {
+        position: fixed;
+        right: 20px;
+        bottom: 20px;
+        width: 320px;
+        height: 420px;
+        background: #1b1b1b;
+        border-radius: 20px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.6);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(50px);
+        pointer-events: none;
+        transition: 0.3s ease;
+    }
 
-.msg {
-    margin: 6px 0;
-}
+    #miniChatPanel.active {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+    }
 
-.user {
-    color: #00ffea;
-}
+    #chatHeader {
+        background: #292929;
+        padding: 15px;
+        font-weight: bold;
+        border-bottom: 1px solid #444;
+    }
 
-.bot {
-    color: #3AFF28;
-}
+    #chatMessages {
+        flex: 1;
+        padding: 10px;
+        overflow-y: auto;
+        text-align: left;
+    }
 
-#chatInput {
-    width: 100%;
-    margin-top: 8px;
-    padding: 6px;
-    background: #0b2509;
-    border: 2px solid #3AFF28;
-    color: white;
-}
+    #chatInputBox {
+        display: flex;
+    }
+    #chatInput {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        outline: none;
+    }
+    #sendBtn {
+        background: #4caf50;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        color: white;
+    }
 
-#sendBtn {
-    width: 100%;
-    margin-top: 6px;
-    padding: 6px;
-    background: #3AFF28;
-    color: #002600;
-    cursor: pointer;
-    font-weight: bold;
-}
+    /* BOTÓN DEL CHAT */
+    #chatOpenBtn {
+        width: 70px;
+        height: 70px;
+        background: #4caf50;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 30px;
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        user-select: none;
+    }
+
 </style>
 </head>
-
 <body>
-<div class="overlay"></div>
 
-<!-- ================== BOTÓN ================== -->
-<div id="chatButton"></div>
+<h1>Comparador + MiniChat IA</h1>
 
-<!-- ================== MINI CHAT ================== -->
-<div id="chatWindow">
-    <div id="chatLog"></div>
-    <input id="chatInput" placeholder="Escribe aquí...">
-    <button id="sendBtn">Enviar</button>
+<div class="container">
+    <h3>Subir UNA sola imagen o link para activar MiniChat</h3>
+    <input type="file" id="singleImage" accept="image/*">
+    <input type="text" id="singleLink" placeholder="O pega un link de imagen">
+
+    <button onclick="activarMiniChat()">Analizar y activar MiniChat</button>
+</div>
+
+<!-- BOTÓN REDONDO PARA MOSTRAR EL CHAT -->
+<div id="chatOpenBtn" onclick="toggleChat()">💬</div>
+
+<!-- PANEL DEL MINICHAT -->
+<div id="miniChatPanel">
+    <div id="chatHeader">Asistente IA</div>
+    <div id="chatMessages"></div>
+
+    <div id="chatInputBox">
+        <input type="text" id="chatInput" placeholder="Escribe..." />
+        <button id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
 </div>
 
 <script>
-/* ========== MOSTRAR/OCULTAR CHAT ========== */
-document.getElementById("chatButton").onclick = () => {
-    const c = document.getElementById("chatWindow");
-    c.style.display = (c.style.display === "none") ? "block" : "none";
-};
 
-/* ========== SISTEMA DE DIÁLOGO DE IA LOCAL SIMULADA ========== */
-
-function botResponse(text) {
-
-    text = text.toLowerCase();
-
-    if (text.includes("barato") || text.includes("menor precio")) {
-        return "📉 Buscando opciones más económicas…\n\n👉 MercadoLibre:\nhttps://listado.mercadolibre.com.ar/" + encodeURIComponent(lastDetectedProduct);
-    }
-
-    if (text.includes("similar") || text.includes("parecido")) {
-        return "🔍 Buscando productos similares…\n\n📦 Marketplace:\nhttps://www.facebook.com/marketplace/search?q=" + encodeURIComponent(lastDetectedProduct);
-    }
-
-    if (text.includes("ubicación")) {
-        return "📍 Necesito tu permiso para usar la ubicación.\nAceptá la notificación del navegador cuando aparezca.";
-    }
-
-    if (text.includes("analiza") || text.includes("analizar") || text.includes("image")) {
-        return "🧠 Analizando la imagen…\n\n✔ Producto detectado: *" + lastDetectedProduct + "*\n✔ Categoría: Electrodomésticos\n✔ Marca probable: Sansei / Philco / Surrey\n✔ Capacidad estimada: 3200–3600 frigorías\n\n¿Querés que busque precios?";
-    }
-
-    return "🙂 No entendí bien. Probá decir:\n- Buscar barato\n- Buscar similares\n- Analizar producto\n- Usar ubicación";
+function toggleChat() {
+    const panel = document.getElementById("miniChatPanel");
+    panel.classList.toggle("active");
 }
 
-let lastDetectedProduct = "aire acondicionado 3500 frigorías";
+function activarMiniChat() {
+    const img = document.getElementById("singleImage").files[0];
+    const link = document.getElementById("singleLink").value.trim();
 
-/* ========== ENVÍO DE MENSAJES ========== */
-document.getElementById("sendBtn").onclick = () => {
+    if (!img && !link) {
+        alert("Sube una imagen o un link para activar el MiniChat.");
+        return;
+    }
+
+    toggleChat();
+    autoMsg("Imagen/link recibido. ¿Desea que busque productos similares pero más económicos?");
+    setTimeout(() => {
+        autoMsg("¿Nos permite utilizar su ubicación para buscar productos en su zona?");
+    }, 1500);
+}
+
+function autoMsg(text) {
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `<div><b>IA:</b> ${text}</div>`;
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendMessage() {
     const input = document.getElementById("chatInput");
-    const log = document.getElementById("chatLog");
+    const text = input.value.trim();
+    if (!text) return;
 
-    const userTxt = input.value.trim();
-    if (userTxt === "") return;
-
-    log.innerHTML += `<div class="msg user">👤 ${userTxt}</div>`;
-
-    const botTxt = botResponse(userTxt);
-    log.innerHTML += `<div class="msg bot">💬 ${botTxt}</div>`;
-
-    log.scrollTop = log.scrollHeight;
+    const box = document.getElementById("chatMessages");
+    box.innerHTML += `<div><b>Tú:</b> ${text}</div>`;
+    box.scrollTop = box.scrollHeight;
     input.value = "";
-};
+
+    // SIMULA SEÑAL ENVIADA A LA IA (CHATGPT)
+    setTimeout(() => {
+        autoMsg("Procesando... generando mejores opciones para ti...");
+    }, 600);
+}
+
 </script>
 
 </body>
 </html>
-
