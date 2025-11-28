@@ -3,44 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparador IA Real – Offline</title>
+<title>Comparador IA Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body { font-family: Arial; background:#eef1f5; padding:15px; }
+body {
+    font-family: Arial;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #1d3557, #457b9d, #a8dadc);
+    background-size: 300% 300%;
+    animation: fondo 12s ease infinite;
+    color: white;
+}
+
+@keyframes fondo {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
 .box {
-    background:white; padding:20px; border-radius:12px;
-    box-shadow:0 0 10px #0002; margin-bottom:20px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(12px);
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    margin-bottom: 25px;
 }
+
+h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
 button {
-    width:100%; padding:12px; background:#007bff; border:none;
-    color:white; border-radius:10px; font-size:18px;
+    width: 100%;
+    padding: 14px;
+    background: #e63946;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    font-size: 18px;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: 0.25s;
 }
-button:hover { background:#005fcc; }
-img { width:100%; max-width:350px; border-radius:10px; margin-top:10px; }
-#resultado { white-space:pre-wrap; background:#fafafa; padding:15px; border-radius:10px; margin-top:20px; }
+button:hover {
+    background: #b71c1c;
+}
+
+img {
+    width: 100%;
+    max-width: 350px;
+    border-radius: 12px;
+    margin-top: 10px;
+    border: 3px solid #fff3;
+}
+
+#resultado {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    color: white;
+    font-size: 18px;
+}
 </style>
 </head>
 <body>
 
+<div class="container">
 <div class="box">
-<h2>Comparador Automático Inteligente</h2>
+<h2>Comparador Inteligente PRO</h2>
 
 <label>Imagen 1:</label>
-<input type="file" id="img1" accept="image/*"><br>
+<input type="file" id="img1" accept="image/*">
 <img id="prev1">
 
 <label>Imagen 2:</label>
-<input type="file" id="img2" accept="image/*"><br>
+<input type="file" id="img2" accept="image/*">
 <img id="prev2">
 
-<button onclick="procesar()">Analizar imágenes</button>
+<button onclick="procesar()">Analizar</button>
 
 <div id="resultado"></div>
 
 <button onclick="pdf()">Descargar PDF</button>
+</div>
 </div>
 
 <script>
@@ -49,194 +110,67 @@ let img1Data = "", img2Data = "";
 
 document.getElementById("img1").addEventListener("change", e=>{
     const r = new FileReader();
-    r.onload=()=>{ img1Data=r.result; document.getElementById("prev1").src=r.result; }
+    r.onload = () => { img1Data=r.result; document.getElementById("prev1").src=r.result; }
     r.readAsDataURL(e.target.files[0]);
 });
 
 document.getElementById("img2").addEventListener("change", e=>{
     const r = new FileReader();
-    r.onload=()=>{ img2Data=r.result; document.getElementById("prev2").src=r.result; }
+    r.onload = () => { img2Data=r.result; document.getElementById("prev2").src=r.result; }
     r.readAsDataURL(e.target.files[0]);
 });
 
 async function procesar() {
     if(!img1Data || !img2Data){
-        alert("Carga ambas imágenes");
+        alert("Cargá ambas imágenes primero");
         return;
     }
 
-    document.getElementById("resultado").innerText = "Analizando, espera...";
+    document.getElementById("resultado").innerHTML = "Analizando...";
 
-    // OCR
     texto1 = (await Tesseract.recognize(img1Data, "spa")).data.text;
     texto2 = (await Tesseract.recognize(img2Data, "spa")).data.text;
 
-    // Análisis inteligente
     let info1 = analizar(texto1);
     let info2 = analizar(texto2);
 
     let comp = comparar(info1, info2);
 
-    document.getElementById("resultado").innerText =
-        "📌 RESULTADO DE LA COMPARACIÓN\n\n" +
-        "🔹 Producto 1:\n" + JSON.stringify(info1, null, 2) + "\n\n" +
-        "🔹 Producto 2:\n" + JSON.stringify(info2, null, 2) + "\n\n" +
-        "⚖ DIFERENCIAS:\n" + comp;
+    document.getElementById("resultado").innerHTML =
+        "<strong>📌 RESULTADOS:</strong><br><br>" +
+        "<strong>Producto 1:</strong><br>" +
+        "• Precio: " + info1.precio + "<br>" +
+        "• Capacidad: " + info1.capacidad + "<br>" +
+        "• Modelo: " + info1.modelo + "<br><br>" +
+        "<strong>Producto 2:</strong><br>" +
+        "• Precio: " + info2.precio + "<br>" +
+        "• Capacidad: " + info2.capacidad + "<br>" +
+        "• Modelo: " + info2.modelo + "<br><br>" +
+        "<strong>⚖ Diferencias:</strong><br>" +
+        comp;
 }
 
 function analizar(texto){
-    let precio = texto.match(/\$\s?\d[\d\.,]*/);
-    let capacidad = texto.match(/\d+\s?(W|w|KW|kw|kW|Frigorías|BTU|L)/);
-    let modelo = texto.match(/[A-Za-z0-9\-]{4,}/g);
-
     return {
-        precio: precio ? precio[0] : "No encontrado",
-        capacidad: capacidad ? capacidad[0] : "No encontrada",
-        modelo: modelo ? modelo[0] : "No identificado",
-        texto_detectado: texto.trim().slice(0, 250) + "..."
+        precio: (texto.match(/\$\s?\d[\d\.,]*/)||["No detectado"])[0],
+        capacidad: (texto.match(/\d+\s?(W|w|KW|kW|Frigorías|BTU|L)/)||["No detectada"])[0],
+        modelo: (texto.match(/[A-Za-z0-9\-]{4,}/)||["No identificado"])[0],
     };
 }
 
 function comparar(a, b){
     let r = "";
-
-    if(a.precio !== b.precio) r += `• Diferencia de precio: ${a.precio} vs ${b.precio}\n`;
-    if(a.capacidad !== b.capacidad) r += `• Capacidad: ${a.capacidad} vs ${b.capacidad}\n`;
-    if(a.modelo !== b.modelo) r += `• Modelos detectados: ${a.modelo} / ${b.modelo}\n`;
-
+    if(a.precio !== b.precio) r += `• Precio: ${a.precio} vs ${b.precio}<br>`;
+    if(a.capacidad !== b.capacidad) r += `• Capacidad: ${a.capacidad} vs ${b.capacidad}<br>`;
+    if(a.modelo !== b.modelo) r += `• Modelo: ${a.modelo} / ${b.modelo}<br>`;
     return r || "No se detectaron diferencias claras.";
 }
 
 function pdf(){
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p","mm","a4");
+    const pdf = new jsPDF();
 
-    pdf.text("Comparación Automática", 10, 10);
-
-    pdf.addImage(img1Data, "JPEG", 10, 20, 80, 80);
-    pdf.addImage(img2Data, "JPEG", 110, 20, 80, 80);
-
-    pdf.text(document.getElementById("resultado").innerText, 10, 120);
-
-    pdf.save("comparacion.pdf");
-}
-</script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparador IA Real – Offline</title>
-
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<style>
-body { font-family: Arial; background:#eef1f5; padding:15px; }
-.box {
-    background:white; padding:20px; border-radius:12px;
-    box-shadow:0 0 10px #0002; margin-bottom:20px;
-}
-button {
-    width:100%; padding:12px; background:#007bff; border:none;
-    color:white; border-radius:10px; font-size:18px;
-}
-button:hover { background:#005fcc; }
-img { width:100%; max-width:350px; border-radius:10px; margin-top:10px; }
-#resultado { white-space:pre-wrap; background:#fafafa; padding:15px; border-radius:10px; margin-top:20px; }
-</style>
-</head>
-<body>
-
-<div class="box">
-<h2>Comparador Automático Inteligente</h2>
-
-<label>Imagen 1:</label>
-<input type="file" id="img1" accept="image/*"><br>
-<img id="prev1">
-
-<label>Imagen 2:</label>
-<input type="file" id="img2" accept="image/*"><br>
-<img id="prev2">
-
-<button onclick="procesar()">Analizar imágenes</button>
-
-<div id="resultado"></div>
-
-<button onclick="pdf()">Descargar PDF</button>
-</div>
-
-<script>
-let texto1 = "", texto2 = "";
-let img1Data = "", img2Data = "";
-
-document.getElementById("img1").addEventListener("change", e=>{
-    const r = new FileReader();
-    r.onload=()=>{ img1Data=r.result; document.getElementById("prev1").src=r.result; }
-    r.readAsDataURL(e.target.files[0]);
-});
-
-document.getElementById("img2").addEventListener("change", e=>{
-    const r = new FileReader();
-    r.onload=()=>{ img2Data=r.result; document.getElementById("prev2").src=r.result; }
-    r.readAsDataURL(e.target.files[0]);
-});
-
-async function procesar() {
-    if(!img1Data || !img2Data){
-        alert("Carga ambas imágenes");
-        return;
-    }
-
-    document.getElementById("resultado").innerText = "Analizando, espera...";
-
-    // OCR
-    texto1 = (await Tesseract.recognize(img1Data, "spa")).data.text;
-    texto2 = (await Tesseract.recognize(img2Data, "spa")).data.text;
-
-    // Análisis inteligente
-    let info1 = analizar(texto1);
-    let info2 = analizar(texto2);
-
-    let comp = comparar(info1, info2);
-
-    document.getElementById("resultado").innerText =
-        "📌 RESULTADO DE LA COMPARACIÓN\n\n" +
-        "🔹 Producto 1:\n" + JSON.stringify(info1, null, 2) + "\n\n" +
-        "🔹 Producto 2:\n" + JSON.stringify(info2, null, 2) + "\n\n" +
-        "⚖ DIFERENCIAS:\n" + comp;
-}
-
-function analizar(texto){
-    let precio = texto.match(/\$\s?\d[\d\.,]*/);
-    let capacidad = texto.match(/\d+\s?(W|w|KW|kw|kW|Frigorías|BTU|L)/);
-    let modelo = texto.match(/[A-Za-z0-9\-]{4,}/g);
-
-    return {
-        precio: precio ? precio[0] : "No encontrado",
-        capacidad: capacidad ? capacidad[0] : "No encontrada",
-        modelo: modelo ? modelo[0] : "No identificado",
-        texto_detectado: texto.trim().slice(0, 250) + "..."
-    };
-}
-
-function comparar(a, b){
-    let r = "";
-
-    if(a.precio !== b.precio) r += `• Diferencia de precio: ${a.precio} vs ${b.precio}\n`;
-    if(a.capacidad !== b.capacidad) r += `• Capacidad: ${a.capacidad} vs ${b.capacidad}\n`;
-    if(a.modelo !== b.modelo) r += `• Modelos detectados: ${a.modelo} / ${b.modelo}\n`;
-
-    return r || "No se detectaron diferencias claras.";
-}
-
-function pdf(){
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p","mm","a4");
-
-    pdf.text("Comparación Automática", 10, 10);
+    pdf.text("COMPARACIÓN AUTOMÁTICA", 10, 10);
 
     pdf.addImage(img1Data, "JPEG", 10, 20, 80, 80);
     pdf.addImage(img2Data, "JPEG", 110, 20, 80, 80);
